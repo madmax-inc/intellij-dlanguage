@@ -37,6 +37,8 @@ import java.util.regex.Pattern;
 /**
  * Responsible for the mechanics when pressing "+" in the SDK configuration, as well as the project
  * SDK configuration.
+ *
+ * This class can't be used in all products as SdkType isn't in CLion
  */
 public class DlangSdkType extends SdkType {
 
@@ -473,6 +475,8 @@ public class DlangSdkType extends SdkType {
 //        return dmdCompilerFile.getAbsolutePath();
 //    }
 
+    @SuppressWarnings("Duplicates")
+    @Deprecated // this class isn't appropriate for static helper methods as as SdkType isn't in all Jetbrains products
     public static Sdk findOrCreateSdk() {
         final DlangSdkType sdkType = DlangSdkType.getInstance();
 

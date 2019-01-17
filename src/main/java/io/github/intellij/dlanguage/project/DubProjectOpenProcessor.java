@@ -40,7 +40,7 @@ public class DubProjectOpenProcessor extends ProjectOpenProcessorBase<DubProject
         final VirtualFile rootDirectory = file.getParent();
 
         if(StringUtil.isNotEmpty(ToolKey.DUB_KEY.getPath())) {
-            builder.getParameters().dubBinary = ToolKey.DUB_KEY.getPath();
+            builder.getParameters().setDubBinary(ToolKey.DUB_KEY.getPath());
             //builder.setRootDirectory(context.getProjectFileDirectory());
             builder.setRootDirectory(rootDirectory.getPath());
             context.setProjectName(rootDirectory.getName());

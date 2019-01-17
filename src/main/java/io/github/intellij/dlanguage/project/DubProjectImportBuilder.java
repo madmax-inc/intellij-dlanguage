@@ -11,6 +11,8 @@ import com.intellij.openapi.module.ModuleManager;
 import com.intellij.openapi.module.ModuleWithNameAlreadyExists;
 import com.intellij.openapi.options.ConfigurationException;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.projectRoots.Sdk;
+import com.intellij.openapi.projectRoots.impl.SdkConfigurationUtil;
 import com.intellij.openapi.roots.ProjectRootManager;
 import com.intellij.openapi.roots.ui.configuration.ModulesProvider;
 import com.intellij.openapi.util.InvalidDataException;
@@ -19,9 +21,9 @@ import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.packaging.artifacts.ModifiableArtifactModel;
 import com.intellij.projectImport.ProjectImportBuilder;
+import io.github.intellij.dlanguage.module.DlangDubModuleBuilder;
 import io.github.intellij.dlanguage.DlangSdkType;
 import io.github.intellij.dlanguage.icons.DlangIcons;
-import io.github.intellij.dlanguage.module.DlangDubModuleBuilder;
 import io.github.intellij.dlanguage.utils.DToolsNotificationListener;
 import org.jdom.JDOMException;
 import org.jetbrains.annotations.NotNull;
@@ -29,9 +31,7 @@ import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 
 public class DubProjectImportBuilder extends ProjectImportBuilder<DubPackage> {
@@ -98,9 +98,7 @@ public class DubProjectImportBuilder extends ProjectImportBuilder<DubPackage> {
         ApplicationManager.getApplication().runWriteAction(() -> {
             commitSdk(project);
             modules.addAll(buildModules(project, model));
-
         });
-
         return modules;
     }
 
@@ -121,16 +119,16 @@ public class DubProjectImportBuilder extends ProjectImportBuilder<DubPackage> {
                                       final ModifiableModuleModel moduleModel) {
         final List<Module> moduleList = new ArrayList<>();
 
-        if(StringUtil.isEmpty(getParameters().dubBinary)) {
+        final Parameters params = getParameters();
+
+        if(StringUtil.isEmpty(params.getDubBinary())) {
             Notifications.Bus.notify(
                 new Notification("Dub Import", "Dub Import",
                     "DUB executable path is empty<br/><a href='configureDLanguageTools'>Configure</a>",
                     NotificationType.WARNING, new DToolsNotificationListener(project)),
                 project);
         }
-        final DubConfigurationParser dubConfigurationParser = new DubConfigurationParser(project,
-            getParameters().dubBinary,
-            false);
+        final DubConfigurationParser dubConfigurationParser = new DubConfigurationParser(project, params.getDubBinary());
 
         final Optional<DubProject> dubProject = dubConfigurationParser.getDubProject();
 
@@ -157,12 +155,77 @@ public class DubProjectImportBuilder extends ProjectImportBuilder<DubPackage> {
     }
 
     private void commitSdk(final Project project) {
-        ProjectRootManager.getInstance(project).setProjectSdk(DlangSdkType.findOrCreateSdk());
+        ProjectRootManager.getInstance(project).setProjectSdk(findOrCreateSdk());
+    }
+
+    @SuppressWarnings("Duplicates") // copied from DlangSdkType for use in CLion
+    private Sdk findOrCreateSdk() {
+        final DlangSdkType sdkType = DlangSdkType.getInstance();
+
+        final Comparator<Sdk> sdkComparator = (sdk1, sdk2) -> {
+            if (sdk1.getSdkType() == sdkType) {
+                return -1;
+            } else if (sdk2.getSdkType() == sdkType) {
+                return 1;
+            } else {
+                return 0;
+            }
+        };
+        return SdkConfigurationUtil.findOrCreateSdk(sdkComparator, sdkType);
     }
 
     public static class Parameters {
-        public List<DubPackage> packages;
-        public boolean openModuleSettings = false;
-        public String dubBinary;
+        private List<DubPackage> packages = new ArrayList<>();
+        private boolean openModuleSettings = false;
+        private String dubBinary;
+
+        public List<DubPackage> getPackages() {
+            return packages;
+        }
+
+        public void setPackages(final List<DubPackage> packages) {
+            this.packages = packages;
+        }
+
+        public boolean isOpenModuleSettings() {
+            return openModuleSettings;
+        }
+
+        public void setOpenModuleSettings(final boolean openModuleSettings) {
+            this.openModuleSettings = openModuleSettings;
+        }
+
+        public String getDubBinary() {
+            return dubBinary;
+        }
+
+        public void setDubBinary(final String dubBinary) {
+            this.dubBinary = dubBinary;
+        }
+
+        @Override
+        public boolean equals(final Object obj) {
+            if (this == obj) return true;
+            if (obj == null || getClass() != obj.getClass()) return false;
+            final Parameters that = (Parameters) obj;
+            return openModuleSettings == that.openModuleSettings &&
+                Objects.equals(packages, that.packages) &&
+                Objects.equals(dubBinary, that.dubBinary);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(packages, openModuleSettings, dubBinary);
+        }
+
+        @Override
+        public String toString() {
+            final StringBuilder sb = new StringBuilder("Parameters{");
+            sb.append("packages=").append(packages);
+            sb.append(", openModuleSettings=").append(openModuleSettings);
+            sb.append(", dubBinary='").append(dubBinary).append('\'');
+            sb.append('}');
+            return sb.toString();
+        }
     }
 }

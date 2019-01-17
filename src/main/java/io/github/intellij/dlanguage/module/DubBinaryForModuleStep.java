@@ -24,6 +24,8 @@ public class DubBinaryForModuleStep extends ModuleWizardStep {
     private final JPanel myPanel;
     private final ProjectFormatPanel myFormatPanel = new ProjectFormatPanel();
     private final TextFieldWithBrowseButton dubBinary;
+    private final JButton autoFindButton;
+
 
     public DubBinaryForModuleStep(final WizardContext wizardContext) {
         this.myWizardContext = wizardContext;
@@ -38,8 +40,7 @@ public class DubBinaryForModuleStep extends ModuleWizardStep {
         if(StringUtil.isNotEmpty(ToolKey.DUB_KEY.getPath())) {
             this.dubBinary.setText(ToolKey.DUB_KEY.getPath());
         }
-
-        final JButton autoFindButton = new JButton(DlangBundle.INSTANCE.message("d.ui.dub.config.label.autofind"), DlangIcons.SDK);
+        this.autoFindButton = new JButton(DlangBundle.INSTANCE.message("d.ui.dub.config.label.autofind"));
 
         final JLabel dubFormatLabel = new JLabel(DlangBundle.INSTANCE.message("d.ui.dub.config.label.dubbinarylocation"));
         dubFormatLabel.setLabelFor(dubBinary);
@@ -89,7 +90,7 @@ public class DubBinaryForModuleStep extends ModuleWizardStep {
                     dubBuilder.setDubBinary(dubBinaryPath);
                 }
             } else if (moduleBuilder instanceof DubProjectImportBuilder) {
-                ((DubProjectImportBuilder) moduleBuilder).getParameters().dubBinary = dubBinaryPath;
+                ((DubProjectImportBuilder) moduleBuilder).getParameters().setDubBinary(this.dubBinary.getText());
             }
         }
 
