@@ -23,6 +23,7 @@ import com.intellij.openapi.util.TextRange;
 import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiDocumentManager;
+import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
 import com.intellij.util.ThrowableRunnable;
 import io.github.intellij.dlanguage.DlangSdkType;
@@ -198,8 +199,13 @@ public class DScanner {
 
     private static TextRange calculateTextRange(final PsiFile file, final int line, final int column) {
         final int startOffset = getOffsetStart(file, line, column);
-        final int endOffset = getOffsetEnd(file, startOffset, line);
-        return new TextRange(startOffset, endOffset);
+
+        final PsiElement psiElement = file.findElementAt(startOffset);
+        if (psiElement == null) {
+            final int endOffset = getOffsetEnd(file, startOffset, line);
+            return new TextRange(startOffset, endOffset);
+        }
+        return new TextRange(startOffset, startOffset + psiElement.getTextLength());
     }
 
     // hello.d(1:7)[error]: Expected identifier instead of ;
